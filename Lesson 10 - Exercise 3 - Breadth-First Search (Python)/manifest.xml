@@ -1,0 +1,15 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<package uuid="lesson10-exercise3-breadth-firstsearchpython-24e1aa">
+ <names>
+  <name lang="en_US">Lesson 10 - Exercise 3 - Breadth-First Search (Python)</name>
+ </names>
+ <descriptionLanguages>
+  <language>en_US</language>
+ </descriptionLanguages>
+ <contents>
+  <behaviorContent path="Lesson 10 - Exercise 3 - Breadth-First Search (Python)">
+   <nature></nature>
+   <permissions/>
+  </behaviorContent>
+ </contents>
+</package>

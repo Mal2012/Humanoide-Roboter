@@ -1,0 +1,251 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ChoregrapheProject xmlns="http://www.aldebaran-robotics.com/schema/choregraphe/project.xsd" xar_version="3">
+    <Box name="root" id="-1" localization="8" tooltip="Root box of Choregraphe&apos;s project. Highest level possible." x="0" y="0">
+        <bitmap>media/images/box/root.png</bitmap>
+        <script language="4">
+            <content>
+                <![CDATA[]]>
+</content>
+        </script>
+        <Input name="onLoad" type="1" type_size="1" nature="0" inner="1" tooltip="Signal sent when diagram is loaded." id="1" />
+        <Input name="onStart" type="1" type_size="1" nature="2" inner="0" tooltip="Box behavior starts when a signal is received on this input." id="2" />
+        <Input name="onStop" type="1" type_size="1" nature="3" inner="0" tooltip="Box behavior stops when a signal is received on this input." id="3" />
+        <Output name="onStopped" type="1" type_size="1" nature="1" inner="0" tooltip="Signal sent when box behavior is finished." id="4" />
+        <Timeline enable="0">
+            <BehaviorLayer name="behavior_layer1">
+                <BehaviorKeyframe name="keyframe1" index="1">
+                    <Diagram>
+                        <Box name="BFS" id="1" localization="8" tooltip="Perform breadth-first search on a defined maze." x="170" y="50">
+                            <bitmap>media/images/box/tracker/walk_tracker.png</bitmap>
+                            <script language="4">
+                                <content>
+                                    <![CDATA[class MyClass(GeneratedClass):
+    def __init__(self):
+        GeneratedClass.__init__(self)
+
+    def onLoad(self):
+        # Define the maze dimensions
+        # The coordinates of the maze go from (0, 0) to (width - 1, height - 1)
+        # North means going from (x, y) to (x, y - 1)
+        # East means going from (x, y) to (x + 1, y)
+        # South means going from (x, y) to (x, y + 1)
+        # West means going from (x, y) to (x - 1, y)
+        self.width = 5
+        self.height = 5
+        self.initializeMaze()
+
+        # Define the start and goal positions
+        self.setStartPosition(0, 0)
+        self.setGoalPosition(4, 2)
+
+        # Add walls to the maze
+        # Adding a south wall to (x, y) is the same as adding a north wall to (x, y + 1)
+        # Adding an east wall to (x, y) is the same as adding a west wall to (x + 1, y)
+        self.addSouthWall(0, 0)
+        self.addEastWall(1, 0)
+        self.addSouthWall(3, 0)
+        self.addSouthWall(1, 1)
+        self.addEastWall(2, 1)
+        self.addSouthWall(4, 1)
+        self.addEastWall(0, 2)
+        self.addSouthWall(0, 2)
+        self.addSouthWall(2, 2)
+        self.addEastWall(3, 2)
+        self.addSouthWall(3, 2)
+        self.addSouthWall(1, 3)
+        self.addEastWall(2, 3)
+        self.addEastWall(1, 4)
+        self.addEastWall(3, 4)
+
+    def onUnload(self):
+        #~ puts code for box cleanup here
+        pass
+
+    def onInput_onStart(self):
+        self.ttsProxy = ALProxy("ALTextToSpeech")
+        #self.ttsProxy.say("Maze is initialized")
+
+        # Initially, the visited list and queue are empty
+        visited = []
+        queue = []
+        # We don't have any values for any nodes either
+        values = dict()
+
+        # First, set the value of the start position to 1
+        values[self.startPosition] = 1
+        # Add the start position to the queue
+        queue.append(self.startPosition)
+
+        done = False
+        while (not done) and (len(queue) > 0):
+            current = queue.pop(0)
+            visited.append(current)
+            currentX, currentY = current
+            #self.ttsProxy.say("%d %d" % (currentX, currentY))
+            if current == self.goalPosition:
+                done = True
+                break
+
+            value = values[current]
+
+            # Add the neighbors if no wall exists and the neighbor isn't in the queue, and hasn't been visited
+
+            # Try north
+            if not self.haveNorthWall(currentX, currentY):
+                neighbor = self.getIndex(currentX, currentY - 1)
+                if (not neighbor in queue) and (not neighbor in visited):
+                    values[neighbor] = value + 1
+                    queue.append(neighbor)
+            # Try south
+            if not self.haveSouthWall(currentX, currentY):
+                neighbor = self.getIndex(currentX, currentY + 1)
+                if (not neighbor in queue) and (not neighbor in visited):
+                    values[neighbor] = value + 1
+                    queue.append(neighbor)
+            # Try east
+            if not self.haveEastWall(currentX, currentY):
+                neighbor = self.getIndex(currentX + 1, currentY)
+                if (not neighbor in queue) and (not neighbor in visited):
+                    values[neighbor] = value + 1
+                    queue.append(neighbor)
+            # Try west
+            if not self.haveWestWall(currentX, currentY):
+                neighbor = self.getIndex(currentX - 1, currentY)
+                if (not neighbor in queue) and (not neighbor in visited):
+                    values[neighbor] = value + 1
+                    queue.append(neighbor)
+
+        #self.ttsProxy.say("%d nodes visited" % len(visited))
+
+        # If done == False, no path exists to the goal
+        if not done:
+            self.ttsProxy.say("No path found.")
+            return
+
+        # Now, we have to find the path
+        path = []
+        current = self.goalPosition
+
+        done = False
+        while not done:
+            # Add the current node into the path
+            path.append(current)
+
+            # Have we found the path back to the start position?
+            if current == self.startPosition:
+                done = True
+                break
+
+            value = values[current]
+            currentX, currentY = current
+
+            #self.ttsProxy.say("%d, %d" % (currentX, currentY))
+            #self.ttsProxy.say("value is %d" % value)
+
+            # Check the neighbors for value - 1
+            # Try north
+            if not self.haveNorthWall(currentX, currentY):
+                neighbor = self.getIndex(currentX, currentY - 1)
+                if values[neighbor] == value - 1:
+                    current = neighbor
+                    continue
+            # Try south
+            if not self.haveSouthWall(currentX, currentY):
+                neighbor = self.getIndex(currentX, currentY + 1)
+                if values[neighbor] == value - 1:
+                    current = neighbor
+                    continue
+            # Try east
+            if not self.haveEastWall(currentX, currentY):
+                neighbor = self.getIndex(currentX + 1, currentY)
+                if values[neighbor] == value - 1:
+                    current = neighbor
+                    continue
+            # Try west
+            if not self.haveWestWall(currentX, currentY):
+                neighbor = self.getIndex(currentX - 1, currentY)
+                if values[neighbor] == value - 1:
+                    current = neighbor
+                    continue
+            break
+
+        # Reverse the path
+        path.reverse()
+        self.ttsProxy.say("Path length is %d" % len(path))
+
+        for node in path:
+            self.ttsProxy.say("Go to (%d, %d)" % node)
+
+    def onInput_onStop(self):
+        self.onUnload() #~ it is recommanded to call onUnload of this box in a onStop method, as the code written in onUnload is used to stop the box as well
+        pass
+
+
+    # Internal functions - do not edit!
+
+    def haveNorthWall(self, x, y):
+        index = self.getIndex(x, y)
+        return index in self.northWalls
+
+    def haveSouthWall(self, x, y):
+        return self.haveNorthWall(x, y + 1)
+
+    def haveWestWall(self, x, y):
+        index = self.getIndex(x, y)
+        return index in self.westWalls
+
+    def haveEastWall(self, x, y):
+        return self.haveWestWall(x + 1, y)
+
+    def initializeMaze(self):
+        self.northWalls = []
+        self.westWalls = []
+        self.startPosition = self.getIndex(-1, -1)
+        self.goalPosition = self.getIndex(-1, -1)
+        # Add walls to the borders
+        for x in range(0, self.width):
+            self.addNorthWall(x, 0)
+            self.addSouthWall(x, self.height - 1)
+        for y in range(0, self.height):
+            self.addWestWall(0, y)
+            self.addEastWall(self.width - 1, y)
+
+    def addNorthWall(self, x, y):
+        index = self.getIndex(x, y)
+        if not index in self.northWalls:
+            self.northWalls.append(index)
+
+    def addSouthWall(self, x, y):
+        self.addNorthWall(x, y + 1)
+
+    def addWestWall(self, x, y):
+        index = self.getIndex(x, y)
+        if not index in self.westWalls:
+            self.westWalls.append(index)
+
+    def addEastWall(self, x, y):
+        self.addWestWall(x + 1, y)
+
+    def getIndex(self, x, y):
+        return (x, y)
+
+    def setStartPosition(self, x, y):
+        self.startPosition = self.getIndex(x, y)
+
+    def setGoalPosition(self, x, y):
+        self.goalPosition = self.getIndex(x, y)]]>
+</content>
+                            </script>
+                            <Input name="onLoad" type="1" type_size="1" nature="0" inner="1" tooltip="Signal sent when diagram is loaded." id="1" />
+                            <Input name="onStart" type="1" type_size="1" nature="2" inner="0" tooltip="Box behavior starts when a signal is received on this input." id="2" />
+                            <Input name="onStop" type="1" type_size="1" nature="3" inner="0" tooltip="Box behavior stops when a signal is received on this input." id="3" />
+                            <Output name="onStopped" type="1" type_size="1" nature="1" inner="0" tooltip="Signal sent when box behavior is finished." id="4" />
+                        </Box>
+                        <Link inputowner="1" indexofinput="2" outputowner="0" indexofoutput="2" />
+                        <Link inputowner="0" indexofinput="4" outputowner="1" indexofoutput="4" />
+                    </Diagram>
+                </BehaviorKeyframe>
+            </BehaviorLayer>
+        </Timeline>
+    </Box>
+</ChoregrapheProject>

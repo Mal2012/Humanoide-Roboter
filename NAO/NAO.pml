@@ -7,7 +7,9 @@
     <Dialogs>
         <Dialog name="ExampleDialog" src="behavior_1/ExampleDialog/ExampleDialog.dlg" />
     </Dialogs>
-    <Resources />
+    <Resources>
+        <File name="swiftswords_ext" src="behavior_1/swiftswords_ext.mp3" />
+    </Resources>
     <Topics>
         <Topic name="ExampleDialog_ged" src="behavior_1/ExampleDialog/ExampleDialog_ged.top" topicName="ExampleDialog" language="de_DE" />
     </Topics>
